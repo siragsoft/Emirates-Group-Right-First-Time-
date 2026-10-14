@@ -39,15 +39,17 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-slate-900 tracking-tight text-base whitespace-nowrap">
-                  Emirates Group
+                  {isAr ? 'مجموعة طيران الإمارات' : 'Emirates Group'}
                 </span>
                 <span className="text-slate-300 font-light">|</span>
                 <span className="text-xs font-medium text-[#BA9653] uppercase tracking-wider whitespace-nowrap">
-                  Right First Time (RFT)
+                  {isAr ? 'صحيح من المرة الأولى (RFT)' : 'Right First Time (RFT)'}
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 whitespace-nowrap hidden sm:block">
-                Smart Position-to-Person Operations & Risk Intelligence
+                {isAr
+                  ? 'العمليات الذكية لربط المناصب بالأشخاص وذكاء المخاطر'
+                  : 'Smart Position-to-Person Operations & Risk Intelligence'}
               </p>
             </div>
           </div>
@@ -119,11 +121,15 @@ export const Header: React.FC<HeaderProps> = ({
                     ? 'bg-white text-slate-900 shadow-xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="Line Manager Mode: Submit and track team requests with pre-submission validation"
+                title={
+                  isAr
+                    ? 'وضع مدير الخط: إنشاء ومتابعة طلبات الفريق مع التحقق الفوري المسبق'
+                    : 'Line Manager Mode: Submit and track team requests with pre-submission validation'
+                }
               >
                 <UserCheck className="w-3.5 h-3.5 text-[#D71921]" />
-                <span className="hidden sm:inline">Line Manager</span>
-                <span className="sm:hidden">Manager</span>
+                <span className="hidden sm:inline">{isAr ? 'مدير الخط المباشر' : 'Line Manager'}</span>
+                <span className="sm:hidden">{isAr ? 'المدير' : 'Manager'}</span>
               </button>
               <button
                 onClick={() => onRoleChange('hr')}
@@ -132,11 +138,15 @@ export const Header: React.FC<HeaderProps> = ({
                     ? 'bg-[#0F172A] text-white shadow-xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="HR Operations / Process Owner Mode: Inspect risk classifier, SHAP, bottleneck mining, and HITL decisions"
+                title={
+                  isAr
+                    ? 'وضع عمليات الموارد البشرية: فحص مصنف المخاطر، أوزان SHAP، تعدين الاختناقات، وحوكمة القرارات'
+                    : 'HR Operations / Process Owner Mode: Inspect risk classifier, SHAP, bottleneck mining, and HITL decisions'
+                }
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-[#BA9653]" />
-                <span className="hidden sm:inline">HR Ops & Process</span>
-                <span className="sm:hidden">HR Ops</span>
+                <span className="hidden sm:inline">{isAr ? 'عمليات الموارد البشرية' : 'HR Ops & Process'}</span>
+                <span className="sm:hidden">{isAr ? 'الموارد' : 'HR Ops'}</span>
               </button>
             </div>
 

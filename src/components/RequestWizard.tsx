@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Send
 } from 'lucide-react';
+import { translations } from '../utils/i18n.js';
 
 interface RequestWizardProps {
   onSubmitted: (newReqId: string) => void;
@@ -295,6 +296,8 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
   const isFormValid = validation?.isValid ?? false;
   const gradeDifference = Number(targetGrade) - Number(currentGrade);
 
+  const t = isAr ? translations.ar : translations.en;
+
   return (
     <div className="space-y-6">
       {/* Top Banner: Right First Time Engine Promise */}
@@ -303,51 +306,53 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#D71921]">
-                Emirates Group RFT Rule Engine
+                {isAr ? 'محرك قواعد التدقيق المسبق لمجموعة الإمارات' : 'Emirates Group RFT Rule Engine'}
               </span>
               <span className="text-slate-300">·</span>
-              <span className="text-xs text-slate-500 font-medium">Pre-Submission Validation Active</span>
+              <span className="text-xs text-slate-500 font-medium">
+                {isAr ? 'التحقق المسبق الفوري نشط' : 'Pre-Submission Validation Active'}
+              </span>
             </div>
             <h2 className="text-lg font-bold text-slate-900 mt-0.5">
-              Smart Position-to-Person Request Studio
+              {t.wizardTitle}
             </h2>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-              Zero-error validation runs in real-time as you type. Block invalid grade jumps, missing headcount authorizations, or brief justifications before dispatching to HR Operations.
+              {t.wizardSubtitle}
             </p>
           </div>
 
           {/* Test Presets for Quick Demo */}
           <div className="flex flex-wrap items-center gap-1.5 shrink-0 self-start sm:self-auto">
-            <span className="text-[11px] font-medium text-slate-400 mr-1">Presets:</span>
+            <span className="text-[11px] font-medium text-slate-400 mr-1">{t.presets}:</span>
             <button
               type="button"
               onClick={() => applyPreset('validLateral')}
-              className="px-2 py-1 text-xs font-medium rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+              className="px-2 py-1 text-xs font-medium rounded bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
             >
-              Express Lateral
+              {t.expressLateral}
             </button>
             <button
               type="button"
               onClick={() => applyPreset('invalidLateral')}
-              className="px-2 py-1 text-xs font-medium rounded bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 transition-colors"
+              className="px-2 py-1 text-xs font-medium rounded bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 transition-colors cursor-pointer"
               title="Test Grade Mismatch Failure"
             >
-              Grade Mismatch
+              {t.gradeMismatch}
             </button>
             <button
               type="button"
               onClick={() => applyPreset('validPromo')}
-              className="px-2 py-1 text-xs font-medium rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors"
+              className="px-2 py-1 text-xs font-medium rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer"
             >
-              Standard Promo
+              {t.standardPromo}
             </button>
             <button
               type="button"
               onClick={() => applyPreset('noBudgetPromo')}
-              className="px-2 py-1 text-xs font-medium rounded bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors"
+              className="px-2 py-1 text-xs font-medium rounded bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors cursor-pointer"
               title="Test Missing Budget Failure"
             >
-              Missing Budget
+              {t.missingBudget}
             </button>
           </div>
         </div>
@@ -360,7 +365,7 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
             {/* Step 1: Request Type Selection */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                1. Select Request Classification
+                {t.step1Title}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {(
@@ -371,29 +376,46 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                     'End of Service',
                     'Position Deletion'
                   ] as RequestType[]
-                ).map(t => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setRequestType(t)}
-                    className={`px-3 py-2.5 rounded-lg text-xs font-medium border text-left transition-all ${
-                      requestType === t
-                        ? 'border-[#D71921] bg-red-50/50 text-[#D71921] font-semibold ring-1 ring-[#D71921]'
-                        : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
-                    }`}
-                  >
-                    <div>{t}</div>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">
-                      {t === 'Lateral Transfer'
-                        ? 'Same grade parity'
-                        : t === 'Promotion'
-                        ? 'Ascending grade'
-                        : t === 'New Position'
-                        ? 'Budget clearance req.'
-                        : 'Staffing offboarding'}
-                    </span>
-                  </button>
-                ))}
+                ).map(itemType => {
+                  const typeLabel =
+                    itemType === 'Lateral Transfer'
+                      ? isAr ? 'نقل جانبي' : 'Lateral Transfer'
+                      : itemType === 'Promotion'
+                      ? isAr ? 'ترقية وظيفية' : 'Promotion'
+                      : itemType === 'New Position'
+                      ? isAr ? 'منصب جديد' : 'New Position'
+                      : itemType === 'End of Service'
+                      ? isAr ? 'إنهاء خدمة' : 'End of Service'
+                      : isAr ? 'إلغاء منصب' : 'Position Deletion';
+
+                  const typeDesc =
+                    itemType === 'Lateral Transfer'
+                      ? isAr ? 'تطابق تام في الدرجة' : 'Same grade parity'
+                      : itemType === 'Promotion'
+                      ? isAr ? 'درجة تصاعدية' : 'Ascending grade'
+                      : itemType === 'New Position'
+                      ? isAr ? 'اعتماد ميزانية ملزم' : 'Budget clearance req.'
+                      : isAr ? 'إجراءات مغادرة' : 'Staffing offboarding';
+
+                  return (
+                    <button
+                      key={itemType}
+                      type="button"
+                      onClick={() => setRequestType(itemType)}
+                      className={`px-3 py-2.5 rounded-lg text-xs font-medium border text-left transition-all cursor-pointer ${
+                        requestType === itemType
+                          ? 'border-[#D71921] bg-red-50/50 text-[#D71921] font-semibold ring-1 ring-[#D71921]'
+                          : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+                      }`}
+                      dir={isAr ? 'rtl' : 'ltr'}
+                    >
+                      <div>{typeLabel}</div>
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {typeDesc}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -404,14 +426,16 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
               <div className="pt-2 border-t border-slate-100">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    2. Employee Identification
+                    {t.step2Title}
                   </label>
                   <span className="text-[11px] text-slate-400 font-mono">Rule-04: EK-XXXXX</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-600 mb-1">Employee ID *</label>
+                    <label className="block text-xs text-slate-600 mb-1">
+                      {isAr ? 'رقم الموظف في طيران الإمارات *' : 'Employee ID *'}
+                    </label>
                     <input
                       type="text"
                       value={employeeId}
@@ -422,22 +446,25 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                           ? 'border-red-500 bg-red-50/40 text-red-900 focus:ring-red-500'
                           : 'border-slate-300 focus:border-[#D71921] focus:ring-[#D71921]'
                       }`}
+                      dir="ltr"
                     />
                     {validation?.errors?.['employeeId'] && (
                       <p className="text-[11px] text-red-600 font-medium mt-1 flex items-center gap-1">
                         <AlertOctagon className="w-3.5 h-3.5" />
-                        {validation.errors['employeeId']}
+                        {isAr ? 'رقم الموظف إلزامي ويبدأ بـ EK' : validation.errors['employeeId']}
                       </p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-xs text-slate-600 mb-1">Employee Full Name</label>
+                    <label className="block text-xs text-slate-600 mb-1">
+                      {isAr ? 'الاسم الكامل للموظف' : 'Employee Full Name'}
+                    </label>
                     <input
                       type="text"
                       value={employeeName}
                       onChange={e => setEmployeeName(e.target.value)}
-                      placeholder="Full Name"
+                      placeholder={isAr ? 'الاسم بالكامل' : 'Full Name'}
                       className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:border-[#D71921] focus:ring-[#D71921]"
                     />
                   </div>
@@ -449,7 +476,7 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
             <div className="pt-2 border-t border-slate-100 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  3. Position Movement & Grade Alignment
+                  {t.step3Title}
                 </label>
                 <span className="text-[11px] text-slate-400">Rule-02A / Rule-02B</span>
               </div>
@@ -459,11 +486,11 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                 <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60 space-y-2">
                   <div className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Current Position & Grade</span>
+                    <span>{t.currentPosGrade}</span>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-slate-500 mb-0.5">Select Occupied Position</label>
+                    <label className="block text-[11px] text-slate-500 mb-0.5">{t.selectOccupiedPos}</label>
                     <select
                       value={currentPositionId}
                       onChange={e => handleSelectCurrentPosition(e.target.value)}
@@ -479,13 +506,13 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
 
                   <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                     <div>
-                      <span className="text-[10px] text-slate-500 block">Department</span>
+                      <span className="text-[10px] text-slate-500 block">{isAr ? 'الإدارة الحالية' : 'Department'}</span>
                       <span className="font-medium text-slate-800">{department}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block">Current Grade</span>
+                      <span className="text-[10px] text-slate-500 block">{t.currentGrade}</span>
                       <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">
-                        Grade {currentGrade}
+                        {isAr ? `الدرجة ${currentGrade}` : `Grade ${currentGrade}`}
                       </span>
                     </div>
                   </div>
@@ -495,11 +522,11 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                 <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/60 space-y-2">
                   <div className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                     <Building className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Target Position & Grade</span>
+                    <span>{t.targetPosGrade}</span>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-slate-500 mb-0.5">Select Target Position</label>
+                    <label className="block text-[11px] text-slate-500 mb-0.5">{t.selectTargetPos}</label>
                     <select
                       value={targetPositionId}
                       onChange={e => handleSelectTargetPosition(e.target.value)}
@@ -515,11 +542,11 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
 
                   <div className="grid grid-cols-2 gap-2 text-xs pt-1">
                     <div>
-                      <span className="text-[10px] text-slate-500 block">Target Dept</span>
+                      <span className="text-[10px] text-slate-500 block">{isAr ? 'الإدارة المستهدفة' : 'Target Dept'}</span>
                       <span className="font-medium text-slate-800">{targetDepartment}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block">Target Grade</span>
+                      <span className="text-[10px] text-slate-500 block">{t.targetGrade}</span>
                       <div className="flex items-center gap-1.5">
                         <input
                           type="number"
@@ -539,7 +566,7 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
               {/* Visual Grade Comparison Delta Strip */}
               <div className="p-3 rounded-lg border border-slate-200 bg-white flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-medium text-slate-600">Grade Delta Check:</span>
+                  <span className="text-xs font-medium text-slate-600">{t.gradeDeltaCheck}:</span>
                   <div className="flex items-center gap-2 font-mono text-xs">
                     <span className="px-2 py-0.5 bg-slate-100 rounded text-slate-800 font-bold">
                       G{currentGrade}
@@ -556,24 +583,24 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                     currentGrade === targetGrade ? (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        Exact Match (Δ = 0)
+                        {isAr ? 'تطابق تام (Δ = 0)' : 'Exact Match (Δ = 0)'}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-xs font-bold text-red-700 bg-red-50 px-2.5 py-1 rounded border border-red-300">
                         <AlertOctagon className="w-3.5 h-3.5" />
-                        Discrepancy: Δ {gradeDifference > 0 ? `+${gradeDifference}` : gradeDifference}
+                        {isAr ? `اختلاف بالدرجة: Δ ${gradeDifference > 0 ? `+${gradeDifference}` : gradeDifference}` : `Discrepancy: Δ ${gradeDifference > 0 ? `+${gradeDifference}` : gradeDifference}`}
                       </span>
                     )
                   ) : requestType === 'Promotion' ? (
                     targetGrade > currentGrade ? (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        Valid Ascension (+{gradeDifference})
+                        {isAr ? `ترقية صحيحة (+${gradeDifference})` : `Valid Ascension (+${gradeDifference})`}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-xs font-bold text-red-700 bg-red-50 px-2.5 py-1 rounded border border-red-300">
                         <AlertOctagon className="w-3.5 h-3.5" />
-                        Invalid: Target ≤ Current
+                        {isAr ? 'مخالفة: الدرجة المستهدفة ≤ الحالية' : 'Invalid: Target ≤ Current'}
                       </span>
                     )
                   ) : (
@@ -587,7 +614,7 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                 <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-2">
                   <AlertOctagon className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold">Rule-02 Blocked: </span>
+                    <span className="font-bold">{isAr ? 'حظر القاعدة RULE-02: ' : 'Rule-02 Blocked: '}</span>
                     <span>{validation.errors['targetGrade']}</span>
                   </div>
                 </div>
@@ -598,7 +625,7 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
             <div className="pt-2 border-t border-slate-100 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  4. Finance Headcount Budget Clearance
+                  {t.step4Title}
                 </label>
                 <span className="text-[11px] text-slate-400">Rule-03: Mandatory for New & Promo</span>
               </div>
@@ -614,7 +641,7 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                       className="w-4 h-4 text-[#D71921] rounded border-slate-300 focus:ring-[#D71921]"
                     />
                     <label htmlFor="budgetApprovalCheckbox" className="text-xs font-medium text-slate-800 cursor-pointer">
-                      Headcount Budget Authorized by Corporate Finance (has_budget_approval = true)
+                      {t.budgetCheckboxLabel}
                     </label>
                   </div>
 
@@ -625,7 +652,7 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                         : 'text-amber-700 bg-amber-100'
                     }`}
                   >
-                    {hasBudgetApproval ? 'VERIFIED' : 'UNVERIFIED'}
+                    {hasBudgetApproval ? t.budgetVerified : t.budgetUnverified}
                   </span>
                 </div>
 
@@ -636,10 +663,12 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                       type="text"
                       value={budgetRefCode}
                       onChange={e => setBudgetRefCode(e.target.value)}
-                      placeholder="Budget Allocation Code (e.g. BUD-2026-Q1)"
+                      placeholder={t.budgetPlaceholder}
                       className="px-2 py-1 text-xs font-mono rounded border border-slate-300 bg-white w-56"
                     />
-                    <span className="text-[11px] text-slate-500">Corporate Finance Headcount Ledger</span>
+                    <span className="text-[11px] text-slate-500">
+                      {isAr ? 'سجل شواغر الميزانية المعتمدة' : 'Corporate Finance Headcount Ledger'}
+                    </span>
                   </div>
                 )}
               </div>
@@ -648,7 +677,7 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                 <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs flex items-start gap-2">
                   <AlertOctagon className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold">Rule-03 Blocked: </span>
+                    <span className="font-bold">{isAr ? 'حظر القاعدة RULE-03: ' : 'Rule-03 Blocked: '}</span>
                     <span>{validation.errors['hasBudgetApproval']}</span>
                   </div>
                 </div>
@@ -659,7 +688,7 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
             <div className="pt-2 border-t border-slate-100 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  5. Business Justification *
+                  {t.step5Title}
                 </label>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-slate-400">Rule-01: Min 15 chars</span>
@@ -679,7 +708,7 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                 rows={3}
                 value={businessJustification}
                 onChange={e => setBusinessJustification(e.target.value)}
-                placeholder="State operational requirement, vacancy coverage, simulator qualifications or business rationale (minimum 15 characters)..."
+                placeholder={t.justificationPlaceholder}
                 className={`w-full p-3 text-xs rounded-lg border leading-relaxed ${
                   validation?.errors?.['businessJustification']
                     ? 'border-red-500 bg-red-50/30 text-red-900 focus:ring-red-500'
@@ -699,9 +728,11 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
             <div className="pt-2 border-t border-slate-100 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                  6. Attachments (Job Description / Certifications)
+                  {t.step6Title}
                 </label>
-                <span className="text-[11px] text-slate-400">Mitigates +20% Delay Risk</span>
+                <span className="text-[11px] text-slate-400">
+                  {isAr ? 'يقلل خطر التأخير بنسبة -20%' : 'Mitigates +20% Delay Risk'}
+                </span>
               </div>
 
               <div className="flex flex-wrap gap-2 text-xs">
@@ -717,9 +748,9 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                 <button
                   type="button"
                   onClick={() => setAttachments([...attachments, `Endorsement_Doc_${attachments.length + 1}.pdf`])}
-                  className="px-2 py-1 text-xs text-[#D71921] hover:bg-red-50 rounded border border-dashed border-[#D71921]/40 transition-colors"
+                  className="px-2 py-1 text-xs text-[#D71921] hover:bg-red-50 rounded border border-dashed border-[#D71921]/40 transition-colors cursor-pointer"
                 >
-                  + Add Attachment
+                  {t.addAttachment}
                 </button>
               </div>
             </div>
@@ -730,12 +761,12 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                 {isFormValid ? (
                   <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
                     <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Right First Time: 100% Pre-validation checks passed</span>
+                    <span>{t.validationPassedTitle}</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 text-xs text-red-700 font-medium">
                     <ShieldAlert className="w-4 h-4 text-red-600" />
-                    <span>Submission blocked: {Object.keys(validation?.errors || {}).length} rule violation(s)</span>
+                    <span>{t.validationBlockedTitle}</span>
                   </div>
                 )}
               </div>
@@ -753,12 +784,12 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
                   {submitting ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>Dispatching to HR Ops...</span>
+                      <span>{t.dispatching}</span>
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      <span>Submit P2P Request</span>
+                      <span>{t.submitButton}</span>
                     </>
                   )}
                 </button>
@@ -778,9 +809,9 @@ export const RequestWizard: React.FC<RequestWizardProps> = ({ onSubmitted, lang 
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-[#D71921]" />
-                <span>Pre-Submission Rule Auditor</span>
+                <span>{t.ruleAuditorTitle}</span>
               </h3>
-              <span className="text-[11px] text-slate-400 font-mono">Live Validation</span>
+              <span className="text-[11px] text-slate-400 font-mono">{t.liveValidation}</span>
             </div>
 
             <div className="space-y-2">

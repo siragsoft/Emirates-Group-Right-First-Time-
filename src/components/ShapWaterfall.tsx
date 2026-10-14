@@ -11,6 +11,7 @@ interface ShapWaterfallProps {
   autoExpressLaneEligible?: boolean;
   predictedCycleDays?: number;
   compact?: boolean;
+  lang?: 'en' | 'ar';
 }
 
 export const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
@@ -21,8 +22,10 @@ export const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
   recommendedAction,
   autoExpressLaneEligible,
   predictedCycleDays,
-  compact = false
+  compact = false,
+  lang = 'en'
 }) => {
+  const isAr = lang === 'ar';
   const tierColor =
     riskTier === 'High'
       ? 'text-red-700 bg-red-50 border-red-200'
@@ -30,17 +33,24 @@ export const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
       ? 'text-amber-800 bg-amber-50 border-amber-200'
       : 'text-emerald-700 bg-emerald-50 border-emerald-200';
 
+  const tierText =
+    riskTier === 'High'
+      ? isAr ? 'عالي الخطورة' : 'High Risk'
+      : riskTier === 'Medium'
+      ? isAr ? 'متوسط الخطورة' : 'Medium Risk'
+      : isAr ? 'منخفض الخطورة' : 'Low Risk';
+
   return (
     <div className="space-y-4">
       {/* Top Gauge Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
         <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50">
-          <div className="text-xs text-slate-500 font-medium">Return Risk</div>
+          <div className="text-xs text-slate-500 font-medium">{isAr ? 'خطر الإرجاع' : 'Return Risk'}</div>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold font-mono tabular-nums text-slate-900">
               {returnRisk}%
             </span>
-            <span className="text-[11px] text-slate-500">P(Bounce to Mgr)</span>
+            <span className="text-[11px] text-slate-500">{isAr ? 'احتمالية الإرجاع للمدير' : 'P(Bounce to Mgr)'}</span>
           </div>
           <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
             <div
@@ -53,12 +63,12 @@ export const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
         </div>
 
         <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50">
-          <div className="text-xs text-slate-500 font-medium">Delay Risk</div>
+          <div className="text-xs text-slate-500 font-medium">{isAr ? 'خطر التأخير' : 'Delay Risk'}</div>
           <div className="flex items-baseline gap-2 mt-1">
             <span className="text-2xl font-bold font-mono tabular-nums text-slate-900">
               {delayRisk}%
             </span>
-            <span className="text-[11px] text-slate-500">P(SLA Breach)</span>
+            <span className="text-[11px] text-slate-500">{isAr ? 'احتمالية تجاوز SLA' : 'P(SLA Breach)'}</span>
           </div>
           <div className="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
             <div
@@ -71,28 +81,28 @@ export const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
         </div>
 
         <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50">
-          <div className="text-xs text-slate-500 font-medium">Composite Tier</div>
+          <div className="text-xs text-slate-500 font-medium">{isAr ? 'المستوى العام للمخاطر' : 'Composite Tier'}</div>
           <div className="mt-1">
             <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${tierColor}`}>
-              {riskTier} Risk
+              {tierText}
             </span>
           </div>
           {predictedCycleDays && (
             <p className="text-[11px] text-slate-500 mt-1 font-mono tabular-nums">
-              Est. cycle: ~{predictedCycleDays} days
+              {isAr ? `دورة متوقعة: ~${predictedCycleDays} أيام` : `Est. cycle: ~${predictedCycleDays} days`}
             </p>
           )}
         </div>
 
         <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/50">
-          <div className="text-xs text-slate-500 font-medium">Express Routing</div>
+          <div className="text-xs text-slate-500 font-medium">{isAr ? 'توجيه المسار' : 'Express Routing'}</div>
           <div className="mt-1">
             {autoExpressLaneEligible ? (
               <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Express Eligible
+                <CheckCircle2 className="w-3.5 h-3.5" /> {isAr ? 'مؤهل للمسار السريع' : 'Express Eligible'}
               </span>
             ) : (
-              <span className="text-xs font-medium text-slate-600">Standard Governance</span>
+              <span className="text-xs font-medium text-slate-600">{isAr ? 'حوكمة قياسية' : 'Standard Governance'}</span>
             )}
           </div>
           <p className="text-[10px] text-slate-400 mt-1">XGBoost LightGBM v3.4</p>
@@ -104,7 +114,9 @@ export const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
         <div className="p-3 rounded-lg bg-blue-50/60 border border-blue-200 text-xs text-blue-900 flex items-start gap-2">
           <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
           <div>
-            <span className="font-semibold text-blue-950">AI Recommended Next Action: </span>
+            <span className="font-semibold text-blue-950">
+              {isAr ? 'الإجراء الذكي الموصى به: ' : 'AI Recommended Next Action: '}
+            </span>
             <span>{recommendedAction}</span>
           </div>
         </div>
@@ -114,9 +126,11 @@ export const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
       <div>
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            Tree SHAP Feature Attributions (Classifier Weights)
+            {isAr ? 'أوزان شجرة SHAP التفسيرية (محددات مؤشر الخطر)' : 'Tree SHAP Feature Attributions (Classifier Weights)'}
           </h4>
-          <span className="text-[11px] text-slate-400 font-mono">Additive Shapley Log-Odds</span>
+          <span className="text-[11px] text-slate-400 font-mono">
+            {isAr ? 'معادلات شابلي اللوغاريتمية' : 'Additive Shapley Log-Odds'}
+          </span>
         </div>
 
         <div className="space-y-2">
@@ -124,6 +138,47 @@ export const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
             const isIncrease = item.impact > 0;
             const absImpact = Math.abs(item.impact);
             const barWidth = Math.min(100, (absImpact / 45) * 100);
+
+            // Arabic translation helpers
+            let displayName = item.displayName;
+            let explanation = item.explanation;
+
+            if (isAr) {
+              if (item.displayName.includes('Cross-Department')) {
+                displayName = 'نقل بين الإدارات المختلفة';
+                explanation = '+٣٢٪ زيادة خطر: النقل بين الإدارات يتطلب مواءمة الهياكل التنظيمية واعتماد الإدارتين.';
+              } else if (item.displayName.includes('Intra-Department')) {
+                displayName = 'تنقل داخلي بنفس الإدارة';
+                explanation = '-٣٠٪ انخفاض خطر: الحركة الداخلية بنفس الإدارة تحظى بموافقة مسبقة ومسار اعتماد مسرع.';
+              } else if (item.displayName.includes('Missing Budget')) {
+                displayName = 'غياب اعتماد ميزانية الشاغر';
+                explanation = '+٢٥٪ زيادة خطر: الطلب يفتقر لرمز ميزانية معتمد من الإدارة المالية للمجموعة.';
+              } else if (item.displayName.includes('Headcount Budget')) {
+                displayName = 'اعتماد ميزانية الشواغر المالية';
+                explanation = '-١٥٪ انخفاض خطر: رمز الميزانية مدقق ومطابق لقاعدة بيانات الإدارة المالية.';
+              } else if (item.displayName.includes('Substantial Grade')) {
+                displayName = 'قفزة استثنائية في الدرجات الوظيفية (> +٢)';
+                explanation = '+٢٨٪ زيادة خطر: الترقية لأكثر من درجتين تتطلب حوكمة لجنة الموارد والتعويضات العليا.';
+              } else if (item.displayName.includes('Standard Grade')) {
+                displayName = 'تدرج وظيفي قياسي (+١)';
+                explanation = '-٨٪ انخفاض خطر: درجة واحدة تتوافق بدقة مع مسار التطور الوظيفي المعتمد في طيران الإمارات.';
+              } else if (item.displayName.includes('Lateral Grade Discrepancy')) {
+                displayName = 'عدم تطابق درجة النقل الجانبي';
+                explanation = '+٤٥٪ زيادة خطر: النقل الجانبي بدرجات مختلفة يُرفض فوراً في فحص الموارد البشرية الأولي.';
+              } else if (item.displayName.includes('Brief Business Justification')) {
+                displayName = 'مبرر أعمال مقتضب جداً';
+                explanation = '+١٦٪ زيادة خطر: المبررات المقتضبة تفتقر للتفاصيل التشغيلية المطلوبة للاعتماد.';
+              } else if (item.displayName.includes('Robust Business Justification')) {
+                displayName = 'مبرر أعمال متكامل ومستوف للشروط';
+                explanation = '-١٠٪ انخفاض خطر: الشرح التفصيلي للحاجة التشغيلية يسرع موافقة الموارد البشرية.';
+              } else if (item.displayName.includes('Missing Support Attachments')) {
+                displayName = 'نقص المستندات والشهادات الداعمة';
+                explanation = '+٢٠٪ زيادة خطر: عدم إرفاق الوصف الوظيفي وساعات المحاكاة يؤدي لإرجاع الطلب.';
+              } else if (item.displayName.includes('Required Documentation Attached')) {
+                displayName = 'كافة الوثائق والمستندات مرفقة';
+                explanation = '-١٢٪ انخفاض خطر: اكتمال الوثائق يسرع الانتقال المباشر لمرحلة التدقيق النهائي.';
+              }
+            }
 
             return (
               <div
@@ -137,7 +192,7 @@ export const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
                     ) : (
                       <TrendingDown className="w-3.5 h-3.5 text-emerald-600" />
                     )}
-                    <span className="font-semibold text-slate-800">{item.displayName}</span>
+                    <span className="font-semibold text-slate-800">{displayName}</span>
                     <span className="text-slate-400">·</span>
                     <span className="text-slate-500 font-mono text-[11px] truncate max-w-[140px] sm:max-w-[220px]">
                       {String(item.value)}
@@ -163,7 +218,7 @@ export const ShapWaterfall: React.FC<ShapWaterfallProps> = ({
 
                 {!compact && (
                   <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                    {item.explanation}
+                    {explanation}
                   </p>
                 )}
               </div>

@@ -16,14 +16,23 @@ export function loadAndAnalyzeEventLog(): ProcessAnalytics {
     return cachedAnalytics;
   }
 
-  const dataPath = path.resolve(process.cwd(), 'data', 'p2p_event_log.json');
-  let rawEvents: ProcessEvent[] = [];
+  const possiblePaths = [
+    path.resolve(process.cwd(), 'data', 'p2p_event_log.json'),
+    path.resolve(__dirname, '..', '..', 'data', 'p2p_event_log.json'),
+    path.resolve(__dirname, 'data', 'p2p_event_log.json')
+  ];
 
-  try {
-    const rawData = fs.readFileSync(dataPath, 'utf-8');
-    rawEvents = JSON.parse(rawData);
-  } catch (err) {
-    console.error('Failed to read p2p_event_log.json, falling back to minimal defaults', err);
+  let rawEvents: ProcessEvent[] = [];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      try {
+        const rawData = fs.readFileSync(p, 'utf-8');
+        rawEvents = JSON.parse(rawData);
+        break;
+      } catch (err) {
+        console.error('Failed reading event log at', p, err);
+      }
+    }
   }
 
   // Group events by caseId

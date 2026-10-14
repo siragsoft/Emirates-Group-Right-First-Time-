@@ -27,13 +27,21 @@ export async function handleAssistantChat(req: ChatRequest): Promise<ChatRespons
   const lowerQuery = query.toLowerCase();
 
   // Check if query matches a known request by ID, employee name, or number
+  // Normalize Arabic names to match English employee records
+  let normalizedQuery = lowerQuery;
+  if (lowerQuery.includes('سارة') || lowerQuery.includes('جينكينز')) normalizedQuery += ' sarah jenkins';
+  if (lowerQuery.includes('فرحان') || lowerQuery.includes('سعيد')) normalizedQuery += ' farhan saeed';
+  if (lowerQuery.includes('ديفيد') || lowerQuery.includes('تشن')) normalizedQuery += ' david chen';
+  if (lowerQuery.includes('راشد') || lowerQuery.includes('البلوشي') || lowerQuery.includes('بلوشي')) normalizedQuery += ' rashid al-blooshi';
+
+  // Check if query matches any in-flight request
   const matchedRequest = inMemoryRequests.find(r => {
     return (
-      lowerQuery.includes(r.id.toLowerCase()) ||
-      lowerQuery.includes(r.trackingNumber.toLowerCase()) ||
-      (r.employeeName && lowerQuery.includes(r.employeeName.toLowerCase())) ||
-      (r.employeeId && lowerQuery.includes(r.employeeId.toLowerCase())) ||
-      (r.title && lowerQuery.includes(r.title.toLowerCase()))
+      normalizedQuery.includes(r.id.toLowerCase()) ||
+      normalizedQuery.includes(r.trackingNumber.toLowerCase()) ||
+      (r.employeeName && normalizedQuery.includes(r.employeeName.toLowerCase())) ||
+      (r.employeeId && normalizedQuery.includes(r.employeeId.toLowerCase())) ||
+      (r.title && normalizedQuery.includes(r.title.toLowerCase()))
     );
   });
 

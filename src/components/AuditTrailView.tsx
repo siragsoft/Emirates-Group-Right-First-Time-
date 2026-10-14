@@ -68,6 +68,8 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ lang }) => {
     downloadAnchor.remove();
   };
 
+  const isAr = lang === 'ar';
+
   return (
     <div className="space-y-6">
       {/* Top Header */}
@@ -76,33 +78,37 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ lang }) => {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#D71921]">
-                Module 4: Responsible AI & Compliance
+                {isAr ? 'الوحدة الرابعة: الامتثال والذكاء الاصطناعي المسؤول' : 'Module 4: Responsible AI & Compliance'}
               </span>
               <span className="text-slate-300">·</span>
-              <span className="text-xs text-slate-500 font-medium">Immutable Ledger</span>
+              <span className="text-xs text-slate-500 font-medium">
+                {isAr ? 'سجل غير قابل للتعديل (Immutable Ledger)' : 'Immutable Ledger'}
+              </span>
             </div>
             <h2 className="text-lg font-bold text-slate-900 mt-0.5">
-              Comprehensive System & AI Audit Trail
+              {isAr ? 'سجل التدقيق الشامل للنظام والذكاء الاصطناعي' : 'Comprehensive System & AI Audit Trail'}
             </h2>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-              Cryptographically timestamped audit log of every pre-submission rule check, XGBoost SHAP scoring inference, and Human-in-the-Loop decision override.
+              {isAr
+                ? 'سجل تدقيق زمني مشفر لكل فحص لقواعد ما قبل الإرسال، واستنتاج لتسجيل درجات SHAP، وتجاوز قرارات الحوكمة البشرية.'
+                : 'Cryptographically timestamped audit log of every pre-submission rule check, XGBoost SHAP scoring inference, and Human-in-the-Loop decision override.'}
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
             <button
               onClick={fetchLogs}
-              className="p-2 text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-              title="Refresh log"
+              className="p-2 text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+              title={isAr ? 'تحديث السجل' : 'Refresh log'}
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={handleExportJSON}
-              className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 transition-colors flex items-center gap-1.5 shadow-xs"
+              className="px-3 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Export Audit JSON</span>
+              <span>{isAr ? 'تصدير سجل التدقيق (JSON)' : 'Export Audit JSON'}</span>
             </button>
           </div>
         </div>
@@ -115,8 +121,9 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ lang }) => {
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search by Case ID, Actor, or keywords..."
+              placeholder={isAr ? 'ابحث برقم المعاملة، المشغل، أو الكلمات المفتاحية...' : 'Search by Case ID, Actor, or keywords...'}
               className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:border-[#D71921] focus:ring-[#D71921]"
+              dir={isAr ? 'rtl' : 'ltr'}
             />
           </div>
 
@@ -127,16 +134,16 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ lang }) => {
               onChange={e => setActionFilter(e.target.value)}
               className="px-2.5 py-1.5 text-xs rounded border border-slate-300 bg-white"
             >
-              <option value="all">All Action Types</option>
-              <option value="PRE_VALIDATION_PASSED">Pre-Validation Passed</option>
-              <option value="PRE_VALIDATION_BLOCKED">Pre-Validation Blocked</option>
-              <option value="RISK_SCORING_COMPUTED">Risk Scoring Computed</option>
-              <option value="REQUEST_SUBMITTED">Request Submitted</option>
-              <option value="HITL_ACCEPTED_RECOMMENDATION">HITL: Accepted AI</option>
-              <option value="HITL_OVERRIDE_FLAGGED">HITL: Operator Override</option>
-              <option value="HR_OPS_APPROVED">HR Ops Approved</option>
-              <option value="RETURNED_TO_MANAGER">Returned to Manager</option>
-              <option value="EXPRESS_LANE_ROUTED">Express Lane Routed</option>
+              <option value="all">{isAr ? 'كافة أنواع العمليات' : 'All Action Types'}</option>
+              <option value="PRE_VALIDATION_PASSED">{isAr ? 'اجتياز التحقق المسبق' : 'Pre-Validation Passed'}</option>
+              <option value="PRE_VALIDATION_BLOCKED">{isAr ? 'حظر التحقق المسبق' : 'Pre-Validation Blocked'}</option>
+              <option value="RISK_SCORING_COMPUTED">{isAr ? 'حساب مؤشر المخاطر' : 'Risk Scoring Computed'}</option>
+              <option value="REQUEST_SUBMITTED">{isAr ? 'إرسال طلب جديد' : 'Request Submitted'}</option>
+              <option value="HITL_ACCEPTED_RECOMMENDATION">{isAr ? 'قبول بشري لتوصية AI' : 'HITL: Accepted AI'}</option>
+              <option value="HITL_OVERRIDE_FLAGGED">{isAr ? 'تجاوز المشغل البشري' : 'HITL: Operator Override'}</option>
+              <option value="HR_OPS_APPROVED">{isAr ? 'اعتماد عمليات الموارد البشرية' : 'HR Ops Approved'}</option>
+              <option value="RETURNED_TO_MANAGER">{isAr ? 'إرجاع لمدير الخط' : 'Returned to Manager'}</option>
+              <option value="EXPRESS_LANE_ROUTED">{isAr ? 'توجيه للمسار السريع' : 'Express Lane Routed'}</option>
             </select>
           </div>
         </div>
@@ -145,8 +152,8 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ lang }) => {
       {/* Ledger Table */}
       <div className="p-6 rounded-xl border border-slate-200 bg-white space-y-4">
         <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-          <span>Displaying {filteredLogs.length} recorded events</span>
-          <span>Security Standard: ISO 27001 / GDPR Compliant</span>
+          <span>{isAr ? `عرض ${filteredLogs.length} حدث مسجل` : `Displaying ${filteredLogs.length} recorded events`}</span>
+          <span>{isAr ? 'معيار الأمان: متوافق مع ISO 27001 و GDPR' : 'Security Standard: ISO 27001 / GDPR Compliant'}</span>
         </div>
 
         <div className="space-y-3">
@@ -190,9 +197,9 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ lang }) => {
                   </div>
 
                   <div className="flex items-center gap-2 text-slate-400 font-mono text-[11px]">
-                    <span>Actor: <strong className="text-slate-700">{log.actor}</strong></span>
+                    <span>{isAr ? 'المشغل:' : 'Actor:'} <strong className="text-slate-700">{log.actor}</strong></span>
                     <span>·</span>
-                    <span>{new Date(log.timestamp).toLocaleString()}</span>
+                    <span>{new Date(log.timestamp).toLocaleString(isAr ? 'ar-AE' : 'en-US')}</span>
                   </div>
                 </div>
 

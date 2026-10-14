@@ -212,6 +212,25 @@ export interface AuditLogEntry {
   };
 }
 
+export interface DepartmentRiskSummary {
+  department: string;
+  totalPending: number;
+  lowRiskCount: number;
+  medRiskCount: number;
+  highRiskCount: number;
+  avgReturnRisk: number;
+  avgDelayRisk: number;
+  highRiskPercentage: number;
+  riskPocketAlert?: string;
+}
+
+export interface BulkActionPayload {
+  ids: string[];
+  action: 'Batch Approve' | 'Flag for Review';
+  actor: string;
+  reason?: string;
+}
+
 export interface AssistantMessage {
   id: string;
   sender: 'user' | 'assistant';

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { P2PRequest, RiskTier } from '../types.js';
 import { ShapWaterfall } from './ShapWaterfall.js';
+import { PredictiveRiskHeatmap } from './PredictiveRiskHeatmap.js';
 import {
   Activity,
   AlertTriangle,
@@ -19,7 +20,12 @@ import {
   Check,
   RotateCcw,
   Zap,
-  Info
+  Info,
+  CheckSquare,
+  Square,
+  Layers,
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 
 interface InFlightTrackerProps {
@@ -49,7 +55,19 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
   const [deptFilter, setDeptFilter] = useState('all');
   const [tierFilter, setTierFilter] = useState<string>('all');
 
-  // HITL Action Dialog State
+  // Multi-Selection State for Bulk Actions (HR Mode)
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkModal, setBulkModal] = useState<{
+    isOpen: boolean;
+    action: 'Batch Approve' | 'Flag for Review';
+  }>({
+    isOpen: false,
+    action: 'Batch Approve'
+  });
+  const [bulkReason, setBulkReason] = useState('');
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+
+  // Single HITL Action Dialog State
   const [actionModal, setActionModal] = useState<{
     isOpen: boolean;
     req: P2PRequest | null;
@@ -95,16 +113,89 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
     fetchRequests();
   }, [statusFilter, deptFilter, search]);
 
+  // Bulk Selection Helpers
+  const toggleSelectOne = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllFiltered = () => {
+    if (selectedIds.length === filteredRequests.length && filteredRequests.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredRequests.map(r => r.id));
+    }
+  };
+
+  const handleSelectAllLowRisk = () => {
+    const lowRiskIds = filteredRequests
+      .filter(r => r.riskPrediction?.riskTier === 'Low' && r.status !== 'Approved')
+      .map(r => r.id);
+    setSelectedIds(lowRiskIds);
+  };
+
+  const handleOpenBulkModal = (action: 'Batch Approve' | 'Flag for Review') => {
+    if (selectedIds.length === 0) return;
+    setBulkReason(
+      action === 'Batch Approve'
+        ? isAr
+          ? 'اعتماد جماعي للطلبات منخفضة المخاطر المتوافقة مع معايير المسار السريع والتحقق المسبق'
+          : 'Batch approval of verified low-risk requests meeting all pre-submission and grade parity criteria.'
+        : isAr
+          ? 'تحويل جماعي لجدول المراجعة اليدوية المتخصصة لتدقيق تفاصيل الدرجة والميزانية'
+          : 'Batch triage into specialized HR review docket for detailed compensation and budgetary analysis.'
+    );
+    setBulkModal({ isOpen: true, action });
+  };
+
+  const handleExecuteBulkAction = async () => {
+    if (selectedIds.length === 0) return;
+    setBulkSubmitting(true);
+    try {
+      const res = await fetch('/api/requests/bulk-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ids: selectedIds,
+          action: bulkModal.action,
+          actor: role === 'hr' ? 'Fatima Al-Suwaidi (HR Ops Bulk Lead)' : 'HR Operations Specialist',
+          reason: bulkReason
+        })
+      });
+
+      if (res.ok) {
+        setBulkModal({ isOpen: false, action: 'Batch Approve' });
+        setSelectedIds([]);
+        await fetchRequests();
+        if (onRefreshNeeded) onRefreshNeeded();
+      }
+    } catch (err) {
+      console.error('Error executing bulk action', err);
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
   const handleOpenHitlModal = (req: P2PRequest, actionType: 'Accept' | 'Override' | 'Approve' | 'Return') => {
     let defaultReason = '';
     if (actionType === 'Accept') {
-      defaultReason = `Accepted AI recommendation: ${req.riskPrediction?.recommendedAction || 'Proceed under fast-track criteria'}`;
+      defaultReason = isAr
+        ? `قبول توصية الذكاء الاصطناعي: ${req.riskPrediction?.recommendedAction || 'المتابعة وفق معايير التدقيق'}`
+        : `Accepted AI recommendation: ${req.riskPrediction?.recommendedAction || 'Proceed under fast-track criteria'}`;
     } else if (actionType === 'Override') {
-      defaultReason = 'Human Operator Override: Mitigating operational factors reviewed; risk flags bypassed under VP delegated authority.';
+      defaultReason = isAr
+        ? 'تجاوز مشغل بشري معتمد: تم تدقيق العوامل التشغيلية وتخفيف المخاطر بتفويض من نائب الرئيس'
+        : 'Human Operator Override: Mitigating operational factors reviewed; risk flags bypassed under VP delegated authority.';
     } else if (actionType === 'Approve') {
-      defaultReason = 'Direct Human Approval: Position and person attributes validated for ERP master synchronization.';
+      defaultReason = isAr
+        ? 'موافقة نهائية مباشرة: تم تدقيق المنصب والشخص لمزامنة تخطيط الموارد البشرية ERP'
+        : 'Direct Human Approval: Position and person attributes validated for ERP master synchronization.';
     } else if (actionType === 'Return') {
-      defaultReason = 'Returned for revision: Grade or budget requirements require line manager correction.';
+      defaultReason = isAr
+        ? 'إرجاع للتعديل: متطلبات الدرجة الوظيفية أو الميزانية تستوجب تصحيح مدير الخط المباشر'
+        : 'Returned for revision: Grade or budget requirements require line manager correction.';
     }
 
     setActionReason(defaultReason);
@@ -153,41 +244,60 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* HR Mode Predictive Risk Heatmap Component */}
+      {role === 'hr' && (
+        <PredictiveRiskHeatmap
+          lang={lang}
+          selectedDepartment={deptFilter}
+          onSelectDepartmentFilter={dept => setDeptFilter(dept)}
+        />
+      )}
+
       {/* Top Header & Metrics Strip */}
       <div className="p-4 rounded-xl border border-slate-200 bg-white">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#D71921]">
-                Module 2 & 4
+                {isAr ? 'الوحدة الثانية والرابعة' : 'Module 2 & 4'}
               </span>
               <span className="text-slate-300">·</span>
               <span className="text-xs text-slate-500 font-medium">
-                XGBoost/LightGBM Risk Radar & Human-In-The-Loop Governance
+                {isAr
+                  ? 'رادار المخاطر التنبؤي وحوكمة القرار البشري والإجراءات الجماعية'
+                  : 'XGBoost/LightGBM Risk Radar & High-Throughput Bulk Operations'}
               </span>
             </div>
             <h2 className="text-lg font-bold text-slate-900 mt-0.5">
-              In-Flight Predictive Risk Tracker
+              {isAr ? 'متتبع المخاطر التنبؤية للطلبات قيد التنفيذ' : 'In-Flight Predictive Risk Tracker'}
             </h2>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl">
-              Continuous monitoring of active Position-to-Person requests. Two ML risk classifiers project Return Probability (manager ping-pong) and Delay Probability (SLA breach) with additive SHAP explanations.
+              {isAr
+                ? 'مراقبة حية ودقيقة لطلبات تعيين ونقل الأشخاص والمناصب. يقوم مصنفان بتحديد احتمالية الإرجاع وخطر التأخير مع تفكيك أسباب الخطر (SHAP).'
+                : 'Continuous monitoring of active Position-to-Person requests. ML classifiers calculate Return Risk and Delay Risk with additive SHAP explanations and high-throughput bulk actions.'}
             </p>
           </div>
 
           {/* Quick Metrics */}
           <div className="flex items-center gap-3 self-start md:self-auto text-xs">
             <div className="p-2.5 rounded-lg border border-slate-200 bg-slate-50/50">
-              <span className="text-[11px] text-slate-500 block">In-Flight Cases</span>
+              <span className="text-[11px] text-slate-500 block">
+                {isAr ? 'الطلبات قيد التنفيذ' : 'In-Flight Cases'}
+              </span>
               <span className="text-lg font-bold font-mono text-slate-900">{requests.length}</span>
             </div>
             <div className="p-2.5 rounded-lg border border-emerald-200 bg-emerald-50/50">
-              <span className="text-[11px] text-emerald-700 block">Express Lane Synced</span>
+              <span className="text-[11px] text-emerald-700 block">
+                {isAr ? 'المسار السريع' : 'Express Lane Synced'}
+              </span>
               <span className="text-lg font-bold font-mono text-emerald-800">
-                {requests.filter(r => r.status === 'Express Lane Synced').length}
+                {requests.filter(r => r.status === 'Express Lane Synced' || r.status === 'Approved').length}
               </span>
             </div>
             <div className="p-2.5 rounded-lg border border-red-200 bg-red-50/50">
-              <span className="text-[11px] text-red-700 block">High Risk / Returned</span>
+              <span className="text-[11px] text-red-700 block">
+                {isAr ? 'عالي الخطورة / مرتجع' : 'High Risk / Returned'}
+              </span>
               <span className="text-lg font-bold font-mono text-red-800">
                 {requests.filter(r => r.riskPrediction?.riskTier === 'High' || r.status.includes('Returned')).length}
               </span>
@@ -203,24 +313,25 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search case #, employee name, title..."
+              placeholder={isAr ? 'ابحث برقم المعاملة، اسم الموظف، المسمى...' : 'Search case #, employee name, title...'}
               className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:border-[#D71921] focus:ring-[#D71921]"
+              dir={isAr ? 'rtl' : 'ltr'}
             />
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <Filter className="w-3.5 h-3.5 text-slate-400" />
             <select
               value={deptFilter}
               onChange={e => setDeptFilter(e.target.value)}
               className="px-2 py-1.5 text-xs rounded border border-slate-300 bg-white"
             >
-              <option value="all">All Departments</option>
-              <option value="Flight Operations">Flight Operations</option>
-              <option value="Airport Operations">Airport Operations</option>
-              <option value="Commercial">Commercial</option>
-              <option value="Engineering">Engineering</option>
-              <option value="HR">HR</option>
+              <option value="all">{isAr ? 'كافة الإدارات' : 'All Departments'}</option>
+              <option value="Flight Operations">{isAr ? 'عمليات الطيران' : 'Flight Operations'}</option>
+              <option value="Airport Operations">{isAr ? 'عمليات المطار' : 'Airport Operations'}</option>
+              <option value="Commercial">{isAr ? 'القطاع التجاري' : 'Commercial'}</option>
+              <option value="Engineering">{isAr ? 'الهندسة والصيانة' : 'Engineering'}</option>
+              <option value="HR">{isAr ? 'الموارد البشرية' : 'HR'}</option>
             </select>
 
             <select
@@ -228,10 +339,10 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
               onChange={e => setTierFilter(e.target.value)}
               className="px-2 py-1.5 text-xs rounded border border-slate-300 bg-white"
             >
-              <option value="all">All Risk Tiers</option>
-              <option value="Low">Low Risk (&lt; 30%)</option>
-              <option value="Medium">Medium Risk (30-65%)</option>
-              <option value="High">High Risk (&gt; 65%)</option>
+              <option value="all">{isAr ? 'كافة مستويات الخطورة' : 'All Risk Tiers'}</option>
+              <option value="Low">{isAr ? 'منخفض الخطورة (< 30%)' : 'Low Risk (< 30%)'}</option>
+              <option value="Medium">{isAr ? 'متوسط الخطورة (30-65%)' : 'Medium Risk (30-65%)'}</option>
+              <option value="High">{isAr ? 'عالي الخطورة (> 65%)' : 'High Risk (> 65%)'}</option>
             </select>
 
             <select
@@ -239,15 +350,88 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
               onChange={e => setStatusFilter(e.target.value)}
               className="px-2 py-1.5 text-xs rounded border border-slate-300 bg-white"
             >
-              <option value="all">All Statuses</option>
-              <option value="In HR Ops Review">In HR Ops Review</option>
-              <option value="Finance Budget Review">Finance Budget Review</option>
-              <option value="Returned to Manager">Returned to Manager</option>
-              <option value="Express Lane Synced">Express Lane Synced</option>
-              <option value="Approved">Approved</option>
+              <option value="all">{isAr ? 'كافة الحالات' : 'All Statuses'}</option>
+              <option value="In HR Ops Review">{isAr ? 'قيد مراجعة الموارد البشرية' : 'In HR Ops Review'}</option>
+              <option value="Finance Budget Review">{isAr ? 'قيد مراجعة الميزانية' : 'Finance Budget Review'}</option>
+              <option value="Returned to Manager">{isAr ? 'مرتجع للمدير' : 'Returned to Manager'}</option>
+              <option value="Express Lane Synced">{isAr ? 'تمت مزامنة المسار السريع' : 'Express Lane Synced'}</option>
+              <option value="Approved">{isAr ? 'معتمد' : 'Approved'}</option>
             </select>
+
+            {/* Quick Refresh */}
+            <button
+              onClick={fetchRequests}
+              className="p-1.5 text-slate-500 hover:text-slate-800 border border-slate-200 rounded hover:bg-slate-50"
+              title="Refresh request list"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
+
+        {/* BULK ACTION BAR (HR Operations Mode) */}
+        {role === 'hr' && (
+          <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200/80">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSelectAllFiltered}
+                className="text-xs font-semibold text-slate-700 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer"
+              >
+                {selectedIds.length === filteredRequests.length && filteredRequests.length > 0 ? (
+                  <CheckSquare className="w-4 h-4 text-[#D71921]" />
+                ) : (
+                  <Square className="w-4 h-4 text-slate-400" />
+                )}
+                <span>
+                  {isAr ? 'تحديد الكل' : 'Select All'} ({filteredRequests.length})
+                </span>
+              </button>
+
+              <span className="text-slate-300">·</span>
+
+              <button
+                type="button"
+                onClick={handleSelectAllLowRisk}
+                className="text-xs font-semibold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded border border-emerald-200 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                <span>
+                  {isAr ? 'تحديد كافة الحالات منخفضة المخاطر' : 'Select All Low-Risk (Express)'}
+                </span>
+              </button>
+
+              {selectedIds.length > 0 && (
+                <span className="text-xs font-mono font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-300">
+                  {selectedIds.length} {isAr ? 'محدد' : 'selected'}
+                </span>
+              )}
+            </div>
+
+            {/* Bulk Execution Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={selectedIds.length === 0}
+                onClick={() => handleOpenBulkModal('Batch Approve')}
+                className="px-3 py-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>{isAr ? 'اعتماد جماعي (ERP Sync)' : 'Batch Approve'}</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={selectedIds.length === 0}
+                onClick={() => handleOpenBulkModal('Flag for Review')}
+                className="px-3 py-1.5 text-xs font-bold text-slate-800 bg-white hover:bg-slate-100 border border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                <span>{isAr ? 'إحالة جماعية للمراجعة' : 'Flag for Review'}</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main 2-Column Split: Case List (5 cols) & Deep Dive + SHAP (7 cols) */}
@@ -255,18 +439,23 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
         {/* Case List Column */}
         <div className="lg:col-span-5 space-y-3">
           <div className="flex items-center justify-between text-xs font-semibold text-slate-600 px-1">
-            <span>Active Requests ({filteredRequests.length})</span>
-            <span>Sorted by SLA Recency</span>
+            <span>
+              {isAr ? 'الطلبات النشطة' : 'Active Requests'} ({filteredRequests.length})
+            </span>
+            <span className="text-slate-400">
+              {isAr ? 'مرتبة حسب اتفاقية مستوى الخدمة' : 'Sorted by SLA Recency'}
+            </span>
           </div>
 
           <div className="space-y-2.5 max-h-[720px] overflow-y-auto pr-1">
             {filteredRequests.length === 0 ? (
               <div className="p-8 text-center rounded-xl border border-slate-200 bg-white text-xs text-slate-500">
-                No active requests match the selected filters.
+                {isAr ? 'لا توجد طلبات تطابق معايير التصفية المحددة.' : 'No active requests match the selected filters.'}
               </div>
             ) : (
               filteredRequests.map(req => {
                 const isSelected = req.id === activeReqId;
+                const isChecked = selectedIds.includes(req.id);
                 const risk = req.riskPrediction;
                 const tier = risk?.riskTier || 'Low';
 
@@ -277,26 +466,41 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
                       setActiveReqId(req.id);
                       if (onSelectRequest) onSelectRequest(req.id);
                     }}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
+                    className={`p-3.5 rounded-xl border transition-all cursor-pointer relative ${
                       isSelected
                         ? 'border-[#D71921] bg-red-50/30 ring-1 ring-[#D71921] shadow-xs'
                         : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-xs'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-slate-900">
-                            {req.trackingNumber}
-                          </span>
-                          <span className="text-slate-300">·</span>
-                          <span className="text-[11px] text-slate-500 font-medium">
-                            {req.requestType}
-                          </span>
+                      <div className="flex items-start gap-2.5">
+                        {role === 'hr' && (
+                          <button
+                            type="button"
+                            onClick={e => toggleSelectOne(req.id, e)}
+                            className="mt-0.5 text-slate-400 hover:text-slate-700 cursor-pointer"
+                          >
+                            {isChecked ? (
+                              <CheckSquare className="w-4 h-4 text-[#D71921]" />
+                            ) : (
+                              <Square className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-slate-900">
+                              {req.trackingNumber}
+                            </span>
+                            <span className="text-slate-300">·</span>
+                            <span className="text-[11px] text-slate-500 font-medium">
+                              {req.requestType}
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-semibold text-slate-800 mt-1 line-clamp-1">
+                            {req.title}
+                          </h4>
                         </div>
-                        <h4 className="text-xs font-semibold text-slate-800 mt-1 line-clamp-1">
-                          {req.title}
-                        </h4>
                       </div>
 
                       {/* Risk Badge */}
@@ -310,7 +514,7 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
                               : 'text-emerald-700 bg-emerald-50 border-emerald-200'
                           }`}
                         >
-                          {risk?.returnRisk}% Ret / {risk?.delayRisk}% Del
+                          {risk?.returnRisk}% {isAr ? 'إرجاع' : 'Ret'} / {risk?.delayRisk}% {isAr ? 'تأخير' : 'Del'}
                         </span>
                       </div>
                     </div>
@@ -318,11 +522,12 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
                     {/* Step owner and status */}
                     <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                       <span className="truncate max-w-[200px]">
-                        Owner: <strong className="text-slate-700">{req.currentStepOwner}</strong>
+                        {isAr ? 'المسؤول الحالي:' : 'Owner:'}{' '}
+                        <strong className="text-slate-700">{req.currentStepOwner}</strong>
                       </span>
                       <span
                         className={`font-medium ${
-                          req.status === 'Express Lane Synced'
+                          req.status === 'Express Lane Synced' || req.status === 'Approved'
                             ? 'text-emerald-600 font-semibold'
                             : req.status === 'Returned to Manager'
                             ? 'text-red-600 font-bold'
@@ -363,7 +568,9 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
                     {activeRequest.title}
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Submitted by: <strong>{activeRequest.submittedBy}</strong> · Department: {activeRequest.department}
+                    {isAr ? 'مقدم الطلب:' : 'Submitted by:'}{' '}
+                    <strong>{activeRequest.submittedBy}</strong> · {isAr ? 'الإدارة:' : 'Department:'}{' '}
+                    {activeRequest.department}
                   </p>
                 </div>
 
@@ -374,42 +581,44 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
                       <button
                         onClick={() => handleOpenHitlModal(activeRequest, 'Accept')}
                         className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
-                        title="Accept AI risk recommendation and route forward"
+                        title={isAr ? 'قبول توصية الذكاء الاصطناعي وتمرير المعاملة' : 'Accept AI risk recommendation and route forward'}
                       >
                         <Check className="w-3.5 h-3.5" />
-                        <span>Accept AI</span>
+                        <span>{isAr ? 'قبول التوصية' : 'Accept AI'}</span>
                       </button>
 
                       <button
                         onClick={() => handleOpenHitlModal(activeRequest, 'Override')}
                         className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-900 text-white transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
-                        title="Override AI risk flag with operator justification"
+                        title={isAr ? 'تجاوز مؤشر الخطر بقرار بشري' : 'Override AI risk flag with operator justification'}
                       >
                         <Zap className="w-3.5 h-3.5 text-[#BA9653]" />
-                        <span>Override AI</span>
+                        <span>{isAr ? 'تجاوز بشري' : 'Override AI'}</span>
                       </button>
 
                       <button
                         onClick={() => handleOpenHitlModal(activeRequest, 'Approve')}
                         className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#D71921] hover:bg-[#b5141b] text-white transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
-                        title="Direct final ERP sync approval"
+                        title={isAr ? 'اعتماد نهائي وتحديث نظام ERP' : 'Direct final ERP sync approval'}
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Approve</span>
+                        <span>{isAr ? 'اعتماد نهائي' : 'Approve'}</span>
                       </button>
 
                       <button
                         onClick={() => handleOpenHitlModal(activeRequest, 'Return')}
                         className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-red-300 text-red-700 hover:bg-red-50 transition-colors flex items-center gap-1 cursor-pointer"
-                        title="Return request to Line Manager for correction"
+                        title={isAr ? 'إرجاع الطلب لمدير الخط للتعديل' : 'Return request to Line Manager for correction'}
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
-                        <span>Return</span>
+                        <span>{isAr ? 'إرجاع' : 'Return'}</span>
                       </button>
                     </>
                   ) : (
                     <div className="text-right">
-                      <span className="text-xs font-medium text-slate-500 block">Current Stage:</span>
+                      <span className="text-xs font-medium text-slate-500 block">
+                        {isAr ? 'المرحلة الحالية:' : 'Current Stage:'}
+                      </span>
                       <span className="text-xs font-bold text-slate-800">{activeRequest.status}</span>
                     </div>
                   )}
@@ -419,44 +628,48 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
               {/* Position & Person Spec Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-lg border border-slate-200 bg-slate-50/50 text-xs">
                 <div>
-                  <div className="text-[11px] text-slate-500 font-semibold mb-1">ORIGIN OCCUPANT & ROLE</div>
+                  <div className="text-[11px] text-slate-500 font-semibold mb-1 uppercase tracking-wider">
+                    {isAr ? 'شاغل الوظيفة والمنصب الحالي' : 'ORIGIN OCCUPANT & ROLE'}
+                  </div>
                   <div className="space-y-0.5">
                     <div>
-                      <span className="text-slate-500">Employee: </span>
+                      <span className="text-slate-500">{isAr ? 'الموظف: ' : 'Employee: '}</span>
                       <strong className="text-slate-900">
-                        {activeRequest.employeeName || activeRequest.employeeId || 'Vacant / New'}
+                        {activeRequest.employeeName || activeRequest.employeeId || (isAr ? 'شاغر / جديد' : 'Vacant / New')}
                       </strong>
                     </div>
                     <div>
-                      <span className="text-slate-500">Current Title: </span>
+                      <span className="text-slate-500">{isAr ? 'المسمى الحالي: ' : 'Current Title: '}</span>
                       <span className="text-slate-800">{activeRequest.currentPositionTitle || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500">Grade: </span>
+                      <span className="text-slate-500">{isAr ? 'الدرجة الحالية: ' : 'Grade: '}</span>
                       <span className="font-mono font-bold text-slate-900">
-                        Grade {activeRequest.currentGrade ?? 'N/A'}
+                        {isAr ? 'الدرجة' : 'Grade'} {activeRequest.currentGrade ?? 'N/A'}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <div className="text-[11px] text-slate-500 font-semibold mb-1">TARGET ASSIGNMENT</div>
+                  <div className="text-[11px] text-slate-500 font-semibold mb-1 uppercase tracking-wider">
+                    {isAr ? 'المنصب والتعيين المستهدف' : 'TARGET ASSIGNMENT'}
+                  </div>
                   <div className="space-y-0.5">
                     <div>
-                      <span className="text-slate-500">Target Role: </span>
+                      <span className="text-slate-500">{isAr ? 'المنصب المستهدف: ' : 'Target Role: '}</span>
                       <strong className="text-slate-900">
-                        {activeRequest.targetPositionTitle || 'New Role'}
+                        {activeRequest.targetPositionTitle || (isAr ? 'منصب جديد' : 'New Role')}
                       </strong>
                     </div>
                     <div>
-                      <span className="text-slate-500">Target Dept: </span>
+                      <span className="text-slate-500">{isAr ? 'الإدارة المستهدفة: ' : 'Target Dept: '}</span>
                       <span className="text-slate-800">{activeRequest.targetDepartment}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500">Target Grade: </span>
+                      <span className="text-slate-500">{isAr ? 'الدرجة المستهدفة: ' : 'Target Grade: '}</span>
                       <span className="font-mono font-bold text-slate-900">
-                        Grade {activeRequest.targetGrade ?? 'N/A'}
+                        {isAr ? 'الدرجة' : 'Grade'} {activeRequest.targetGrade ?? 'N/A'}
                       </span>
                       {activeRequest.currentGrade != null && activeRequest.targetGrade != null && (
                         <span className="ml-1 text-[11px] text-slate-500 font-mono">
@@ -471,7 +684,7 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
               {/* Business Justification Block */}
               <div className="text-xs space-y-1">
                 <span className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">
-                  Business Justification (Rule-01 Verified)
+                  {isAr ? 'مبرر الأعمال التشغيلي (تم التحقق من القاعدة RULE-01)' : 'Business Justification (Rule-01 Verified)'}
                 </span>
                 <p className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-700 leading-relaxed font-sans">
                   "{activeRequest.businessJustification}"
@@ -484,10 +697,16 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
                   <div className="mb-3">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
                       <Activity className="w-4 h-4 text-[#D71921]" />
-                      <span>XGBoost Classifier Risk Inference & SHAP Decomposition</span>
+                      <span>
+                        {isAr
+                          ? 'استنتاج مصنف XGBoost وتحليل أوزان SHAP التفصيلية'
+                          : 'XGBoost Classifier Risk Inference & SHAP Decomposition'}
+                      </span>
                     </h4>
                     <p className="text-[11px] text-slate-500">
-                      Additive feature impacts explain why this request received its Return Risk and Delay Risk scores.
+                      {isAr
+                        ? 'تفكيك العوامل الرياضية المؤثرة في درجات خطر الإرجاع وخطر التأخير الزمني.'
+                        : 'Additive feature impacts explain why this request received its Return Risk and Delay Risk scores.'}
                     </p>
                   </div>
 
@@ -510,40 +729,40 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-[#BA9653] flex items-center gap-1">
                       <ShieldCheck className="w-4 h-4" />
-                      Recorded Human Decision: [{activeRequest.hitlActionTaken.action}]
+                      {isAr ? 'القرار البشري المسجل:' : 'Recorded Human Decision:'} [{activeRequest.hitlActionTaken.action}]
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">
                       {new Date(activeRequest.hitlActionTaken.timestamp).toLocaleString()}
                     </span>
                   </div>
                   <p className="text-slate-300">
-                    Decision by <strong>{activeRequest.hitlActionTaken.actor}</strong>: "{activeRequest.hitlActionTaken.reason}"
+                    {isAr ? 'بواسطة المشغل ' : 'Decision by '}<strong>{activeRequest.hitlActionTaken.actor}</strong>: "{activeRequest.hitlActionTaken.reason}"
                   </p>
                 </div>
               )}
             </div>
           ) : (
             <div className="p-12 text-center rounded-xl border border-slate-200 bg-white text-xs text-slate-500">
-              Select an in-flight request to inspect its risk scores and SHAP explainability.
+              {isAr ? 'حدد طلباً من القائمة لعرض مؤشرات الخطر وتفاصيل SHAP' : 'Select an in-flight request to inspect its risk scores and SHAP explainability.'}
             </div>
           )}
         </div>
       </div>
 
-      {/* Human-in-the-Loop Confirmation Modal */}
-      {actionModal.isOpen && actionModal.req && (
+      {/* BULK ACTION CONFIRMATION MODAL */}
+      {bulkModal.isOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-[#D71921]" />
+                <Layers className="w-5 h-5 text-[#D71921]" />
                 <h3 className="text-sm font-bold text-slate-900">
-                  Human-in-the-Loop Decision: {actionModal.actionType} Action
+                  {isAr ? 'تأكيد العملية الجماعية' : 'Confirm Bulk Action'}: {bulkModal.action}
                 </h3>
               </div>
               <button
-                onClick={() => setActionModal({ isOpen: false, req: null, actionType: 'Accept' })}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                onClick={() => setBulkModal({ isOpen: false, action: 'Batch Approve' })}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -551,29 +770,115 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
 
             <div className="text-xs text-slate-600 space-y-2">
               <p>
-                You are executing a binding human governance action on{' '}
-                <strong className="text-slate-900">{actionModal.req.trackingNumber}</strong> (
-                {actionModal.req.title}).
+                {isAr
+                  ? `أنت على وشك تنفيذ إجراء [${bulkModal.action}] على ${selectedIds.length} معاملة دفعة واحدة:`
+                  : `You are about to execute [${bulkModal.action}] on ${selectedIds.length} selected request(s):`}
               </p>
-              <div className="p-2.5 rounded bg-slate-50 border border-slate-200 font-mono text-[11px]">
-                Current Risk: {actionModal.req.riskPrediction?.returnRisk}% Return /{' '}
-                {actionModal.req.riskPrediction?.delayRisk}% Delay ({actionModal.req.riskPrediction?.riskTier} Tier)
+              <div className="max-h-32 overflow-y-auto p-2 bg-slate-50 rounded border border-slate-200 font-mono text-[11px] space-y-1">
+                {selectedIds.map(id => {
+                  const reqItem = requests.find(r => r.id === id);
+                  return (
+                    <div key={id} className="flex items-center justify-between">
+                      <span className="font-bold">{reqItem?.trackingNumber || id}</span>
+                      <span className="text-slate-500">{reqItem?.title}</span>
+                      <span className="text-emerald-700 font-bold">{reqItem?.riskPrediction?.riskTier} Risk</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-800 mb-1">
-                Operator Rationale & Audit Justification *
+                {isAr ? 'مبرر وتأكيد الاعتماد الجماعي لسجل التدقيق *' : 'Audit Rationale & Operator Justification *'}
+              </label>
+              <textarea
+                rows={3}
+                value={bulkReason}
+                onChange={e => setBulkReason(e.target.value)}
+                placeholder={isAr ? 'اكتب مبرر القرار الجماعي...' : 'State reason for executing bulk batch action...'}
+                className="w-full p-2.5 text-xs rounded-lg border border-slate-300 focus:border-[#D71921] focus:ring-[#D71921]"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                {isAr
+                  ? 'سيتم تسجيل هذه العملية كمدخل منفصل في سجل التدقيق غير القابل للتعديل لكل معاملة على حدة.'
+                  : 'An immutable compliance audit record will be registered for every individual request in this batch.'}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setBulkModal({ isOpen: false, action: 'Batch Approve' })}
+                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                {isAr ? 'إلغاء' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                disabled={bulkSubmitting || !bulkReason.trim()}
+                onClick={handleExecuteBulkAction}
+                className="px-4 py-2 text-xs font-bold text-white bg-[#D71921] hover:bg-[#b5141b] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                {bulkSubmitting
+                  ? isAr ? 'جاري تنفيذ العملية الجماعية...' : 'Executing Batch Action...'
+                  : isAr
+                  ? `تأكيد [${bulkModal.action}] لـ (${selectedIds.length}) طلبات`
+                  : `Confirm [${bulkModal.action}] (${selectedIds.length})`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Human-in-the-Loop Single Confirmation Modal */}
+      {actionModal.isOpen && actionModal.req && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-[#D71921]" />
+                <h3 className="text-sm font-bold text-slate-900">
+                  {isAr ? 'قرار بشري معتمد:' : 'Human-in-the-Loop Decision:'} {actionModal.actionType}
+                </h3>
+              </div>
+              <button
+                onClick={() => setActionModal({ isOpen: false, req: null, actionType: 'Accept' })}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-600 space-y-2">
+              <p>
+                {isAr
+                  ? `أنت بصدد اتخاذ قرار حوكمة ملزم للمعاملة: `
+                  : `You are executing a binding human governance action on `}
+                <strong className="text-slate-900">{actionModal.req.trackingNumber}</strong> (
+                {actionModal.req.title}).
+              </p>
+              <div className="p-2.5 rounded bg-slate-50 border border-slate-200 font-mono text-[11px]">
+                {isAr ? 'مؤشر الخطر: ' : 'Current Risk: '}{actionModal.req.riskPrediction?.returnRisk}% {isAr ? 'إرجاع' : 'Return'} /{' '}
+                {actionModal.req.riskPrediction?.delayRisk}% {isAr ? 'تأخير' : 'Delay'} ({actionModal.req.riskPrediction?.riskTier} Tier)
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-800 mb-1">
+                {isAr ? 'مبرر المشغل البشري وتوثيق التدقيق *' : 'Operator Rationale & Audit Justification *'}
               </label>
               <textarea
                 rows={3}
                 value={actionReason}
                 onChange={e => setActionReason(e.target.value)}
-                placeholder="State reason for accepting, overriding or returning this request..."
+                placeholder={isAr ? 'اكتب سبب القبول أو التجاوز أو الإرجاع...' : 'State reason for accepting, overriding or returning this request...'}
                 className="w-full p-2.5 text-xs rounded-lg border border-slate-300 focus:border-[#D71921] focus:ring-[#D71921]"
               />
               <p className="text-[11px] text-slate-400 mt-1">
-                This decision is logged to the immutable Emirates Group audit ledger with timestamp and identity.
+                {isAr
+                  ? 'يتم توثيق هذا القرار في سجل تدقيق مجموعة الإمارات مع الطابع الزمني واسم المشغل.'
+                  : 'This decision is logged to the immutable Emirates Group audit ledger with timestamp and identity.'}
               </p>
             </div>
 
@@ -581,17 +886,21 @@ export const InFlightTracker: React.FC<InFlightTrackerProps> = ({
               <button
                 type="button"
                 onClick={() => setActionModal({ isOpen: false, req: null, actionType: 'Accept' })}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
               >
-                Cancel
+                {isAr ? 'إلغاء' : 'Cancel'}
               </button>
               <button
                 type="button"
                 disabled={actionSubmitting || !actionReason.trim()}
                 onClick={handleExecuteHitlAction}
-                className="px-4 py-2 text-xs font-bold text-white bg-[#D71921] hover:bg-[#b5141b] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-bold text-white bg-[#D71921] hover:bg-[#b5141b] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
               >
-                {actionSubmitting ? 'Recording Action...' : `Confirm [${actionModal.actionType}]`}
+                {actionSubmitting
+                  ? isAr ? 'جاري تسجيل القرار...' : 'Recording Action...'
+                  : isAr
+                  ? `تأكيد [${actionModal.actionType}]`
+                  : `Confirm [${actionModal.actionType}]`}
               </button>
             </div>
           </div>
