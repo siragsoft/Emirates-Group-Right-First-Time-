@@ -87,7 +87,7 @@ export function createExpressApp() {
       logAuditEntry({
         caseId: req.body.caseId || 'INFERENCE-RUN',
         trackingNumber: req.body.trackingNumber || 'P2P-INFERENCE',
-        actor: 'XGBoost Risk Classifier v3.4',
+        actor: 'Prototype Risk Engine',
         actorRole: 'AI Risk Engine',
         actionType: 'RISK_SCORING_COMPUTED',
         details: `Calculated Return Risk: ${risk.returnRisk}% | Delay Risk: ${risk.delayRisk}% | Tier: ${risk.riskTier}`,
@@ -247,7 +247,7 @@ export function createExpressApp() {
           actor: 'P2P Express Lane Orchestrator',
           actorRole: 'System Rule Engine',
           actionType: 'EXPRESS_LANE_ROUTED',
-          details: 'Zero-discrepancy intra-department lateral transfer routed to Express Lane. Auto-synced to Emirates ERP Core.',
+          details: 'Prototype simulation: zero-discrepancy lateral transfer routed to the Express Lane. No live Emirates ERP integration is configured.',
           metadata: {
             returnRisk: riskPrediction.returnRisk,
             delayRisk: riskPrediction.delayRisk
