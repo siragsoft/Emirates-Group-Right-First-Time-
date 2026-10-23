@@ -87,7 +87,7 @@ export function createExpressApp() {
       logAuditEntry({
         caseId: req.body.caseId || 'INFERENCE-RUN',
         trackingNumber: req.body.trackingNumber || 'P2P-INFERENCE',
-        actor: 'XGBoost Risk Classifier v3.4',
+        actor: 'Prototype Risk Engine',
         actorRole: 'AI Risk Engine',
         actionType: 'RISK_SCORING_COMPUTED',
         details: `Calculated Return Risk: ${risk.returnRisk}% | Delay Risk: ${risk.delayRisk}% | Tier: ${risk.riskTier}`,
@@ -191,9 +191,9 @@ export function createExpressApp() {
       });
 
       const isExpress = riskPrediction.autoExpressLaneEligible;
-      const status = isExpress ? 'Express Lane Synced' : 'In HR Ops Review';
+      const status = isExpress ? 'Express Lane simulated (demo only)' : 'In HR Ops Review';
       const currentStepOwner = isExpress
-        ? 'ERP Core Synced'
+        ? 'ERP sync simulated (demo only)'
         : 'HR Operations (Initial Triage)';
 
       const newRequest: P2PRequest = {
@@ -247,7 +247,7 @@ export function createExpressApp() {
           actor: 'P2P Express Lane Orchestrator',
           actorRole: 'System Rule Engine',
           actionType: 'EXPRESS_LANE_ROUTED',
-          details: 'Zero-discrepancy intra-department lateral transfer routed to Express Lane. Auto-synced to Emirates ERP Core.',
+          details: 'Prototype simulation: zero-discrepancy lateral transfer routed to the Express Lane. No live Emirates ERP integration is configured.',
           metadata: {
             returnRisk: riskPrediction.returnRisk,
             delayRisk: riskPrediction.delayRisk
@@ -297,8 +297,8 @@ export function createExpressApp() {
       } else if (action === 'Accept') {
         auditActionType = 'HITL_ACCEPTED_RECOMMENDATION';
         if (request.riskPrediction?.autoExpressLaneEligible) {
-          request.status = 'Express Lane Synced';
-          request.currentStepOwner = 'ERP Core Synced';
+          request.status = 'Express Lane simulated (demo only)';
+          request.currentStepOwner = 'ERP sync simulated (demo only)';
         }
       }
 
