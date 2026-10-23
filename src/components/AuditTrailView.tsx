@@ -82,7 +82,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ lang }) => {
               </span>
               <span className="text-slate-300">·</span>
               <span className="text-xs text-slate-500 font-medium">
-                {isAr ? 'سجل غير قابل للتعديل (Immutable Ledger)' : 'Immutable Ledger'}
+                {isAr ? 'سجل تجريبي داخل الذاكرة' : 'In-memory prototype log'}
               </span>
             </div>
             <h2 className="text-lg font-bold text-slate-900 mt-0.5">
@@ -90,8 +90,8 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ lang }) => {
             </h2>
             <p className="text-xs text-slate-500 mt-1 max-w-2xl">
               {isAr
-                ? 'سجل تدقيق زمني مشفر لكل فحص لقواعد ما قبل الإرسال، واستنتاج لتسجيل درجات SHAP، وتجاوز قرارات الحوكمة البشرية.'
-                : 'Cryptographically timestamped audit log of every pre-submission rule check, XGBoost SHAP scoring inference, and Human-in-the-Loop decision override.'}
+                ? 'سجل تجريبي لأحداث النظام ونتائج محاكاة المخاطر وقرارات المراجعة البشرية. لا توجد مزامنة مباشرة مع نظام ERP.'
+                : 'Prototype log of demo events, simulated risk outputs, and human review actions. No live ERP synchronization is configured.'}
             </p>
           </div>
 
@@ -153,7 +153,7 @@ export const AuditTrailView: React.FC<AuditTrailViewProps> = ({ lang }) => {
       <div className="p-6 rounded-xl border border-slate-200 bg-white space-y-4">
         <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
           <span>{isAr ? `عرض ${filteredLogs.length} حدث مسجل` : `Displaying ${filteredLogs.length} recorded events`}</span>
-          <span>{isAr ? 'معيار الأمان: متوافق مع ISO 27001 و GDPR' : 'Security Standard: ISO 27001 / GDPR Compliant'}</span>
+          <span>{isAr ? 'نموذج أولي — غير معتمد للامتثال' : 'Prototype only — not compliance certified'}</span>
         </div>
 
         <div className="space-y-3">
