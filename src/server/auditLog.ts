@@ -106,8 +106,8 @@ export const inMemoryRequests: P2PRequest[] = [
     trackingNumber: 'P2P-EK-2026-0105',
     requestType: 'Lateral Transfer',
     title: 'Express Lane Transfer: Elena Rostova Reliability Lead',
-    status: 'Express Lane Synced',
-    currentStepOwner: 'ERP Core Synced',
+    status: 'Express Lane simulated (demo only)',
+    currentStepOwner: 'ERP sync simulated (demo only)',
     department: 'Engineering',
     targetDepartment: 'Engineering',
     employeeId: 'EK-71822',
@@ -330,7 +330,7 @@ export const inMemoryAuditLog: AuditLogEntry[] = [
     timestamp: '2026-10-12T09:14:55Z',
     caseId: 'REQ-2026-108',
     trackingNumber: 'P2P-EK-2026-0108',
-    actor: 'XGBoost Risk Classifier v3.4',
+    actor: 'Prototype Risk Engine',
     actorRole: 'AI Risk Engine',
     actionType: 'RISK_SCORING_COMPUTED',
     details: 'Calculated Return Risk: 28% | Delay Risk: 38% | Risk Tier: Low. Top SHAP: Standard Command progression (-15%), Grade Jump +2 (+28%).',
@@ -386,7 +386,7 @@ export const inMemoryAuditLog: AuditLogEntry[] = [
     actor: 'P2P Express Lane Orchestrator',
     actorRole: 'System Rule Engine',
     actionType: 'EXPRESS_LANE_ROUTED',
-    details: 'Zero-discrepancy intra-department lateral transfer routed to Express Lane. Auto-synced to Emirates ERP Core within 10 hours.',
+    details: 'Demo seed event only: zero-discrepancy lateral transfer routed to the Express Lane in simulation. No live Emirates ERP integration is configured.',
     metadata: {
       returnRisk: 12,
       delayRisk: 8
