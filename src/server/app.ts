@@ -191,9 +191,9 @@ export function createExpressApp() {
       });
 
       const isExpress = riskPrediction.autoExpressLaneEligible;
-      const status = isExpress ? 'Express Lane Synced' : 'In HR Ops Review';
+      const status = isExpress ? 'Express Lane simulated (demo only)' : 'In HR Ops Review';
       const currentStepOwner = isExpress
-        ? 'ERP Core Synced'
+        ? 'ERP sync simulated (demo only)'
         : 'HR Operations (Initial Triage)';
 
       const newRequest: P2PRequest = {
@@ -297,8 +297,8 @@ export function createExpressApp() {
       } else if (action === 'Accept') {
         auditActionType = 'HITL_ACCEPTED_RECOMMENDATION';
         if (request.riskPrediction?.autoExpressLaneEligible) {
-          request.status = 'Express Lane Synced';
-          request.currentStepOwner = 'ERP Core Synced';
+          request.status = 'Express Lane simulated (demo only)';
+          request.currentStepOwner = 'ERP sync simulated (demo only)';
         }
       }
 
